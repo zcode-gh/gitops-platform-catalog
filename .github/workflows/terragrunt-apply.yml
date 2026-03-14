@@ -1,0 +1,109 @@
+name: Terragrunt Apply
+# This workflow is triggered when a pull request is closed.
+# It checks for modified files in the working directory and apply terragrunt.
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+    types:
+      - closed
+
+jobs:
+  terragrunt_set_environment:
+    name: Set Environment
+    if: github.event.pull_request.merged == true
+    uses: zcode-gh/gitops-workflow/.github/workflows/terragrunt-set-environment.yml@main
+    with:
+      github_base_ref: ${{ github.base_ref }}
+
+  github_list_pr_files:
+    name: List Modified Files
+    if: github.event.pull_request.merged == true
+    uses: zcode-gh/gitops-workflow/.github/workflows/github-list-pr-files.yml@main
+    with:
+      github_repository: ${{ github.repository }}
+      github_event_pull_request_number: ${{ github.event.pull_request.number }}
+    secrets:
+      github_secret_token: ${{ secrets.GITHUB_TOKEN }}
+
+  terragrunt_filter_working_dir:
+    name: Filter Working Directory
+    needs:
+      - terragrunt_set_environment
+      - github_list_pr_files
+    if: github.event.pull_request.merged == true && needs.github_list_pr_files.outputs.pr_files_count > 0
+    uses: zcode-gh/gitops-workflow/.github/workflows/terragrunt-filter-working-dir.yml@main
+    with:
+      working_directory_filter: ${{ needs.terragrunt_set_environment.outputs.working_dir }}
+      encoded_modified_files_to_filter: ${{ needs.github_list_pr_files.outputs.encoded_modified_files }}
+
+  terragrunt_apply:
+    name: Terragrunt Apply
+    needs: terragrunt_filter_working_dir
+    if: needs.terragrunt_filter_working_dir.outputs.working_dirs_count > 0
+    uses: zcode-gh/gitops-workflow/.github/workflows/terragrunt-apply.yml@main
+    with:
+      encoded_working_dirs: ${{ needs.terragrunt_filter_working_dir.outputs.encoded_working_dirs }}
+      github_repository: ${{ github.repository }}
+      github_run_id: ${{ github.run_id }}
+      github_event_pull_request_number: ${{ github.event.pull_request.number }}
+
+  comment_results_status:
+    name: Comment Results Status
+    if: always()
+    needs: terragrunt_apply
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Comment Results
+        id: comment_results
+        env:
+          APPLY_MAIN_OUTCOME: ${{ needs.terragrunt_apply.outputs.main_outcome }}
+          APPLY_RESULT: ${{ needs.terragrunt_apply.result }}
+        run: |
+          # Prepare the comment results to be posted
+          if [[ -z "${APPLY_MAIN_OUTCOME}" ]]; then
+            APPLY_STATUS=$APPLY_RESULT
+          else
+            APPLY_STATUS=$APPLY_MAIN_OUTCOME
+          fi
+          APPLY_STATUS_COMMENT="**Terragrunt apply** [\`${APPLY_STATUS}\`]"
+          ENCODED_COMMENT_RESULTS=$(echo -e "${APPLY_STATUS_COMMENT}" | jq -Rsa . | base64 -w 0)
+          echo "encoded_comment_results=${ENCODED_COMMENT_RESULTS}" >> $GITHUB_OUTPUT
+          if [[ "${APPLY_STATUS}" == "failure" ]]; then
+            exit 1
+          fi
+        continue-on-error: true
+    outputs:
+      encoded_comment_results: ${{ steps.comment_results.outputs.encoded_comment_results }}
+      comment_results_status_outcome: ${{ steps.comment_results.outcome }}
+
+  github_post_comment:
+    name: Github Post Comment
+    needs:
+      - comment_results_status
+      - terragrunt_apply
+    if: always()
+    uses: zcode-gh/gitops-workflow/.github/workflows/github-post-comment.yml@main
+    with:
+      github_repository: ${{ github.repository }}
+      github_event_pull_request_number: ${{ github.event.pull_request.number }}
+      encoded_comment_title: ${{ needs.terragrunt_apply.outputs.encoded_comment_title }}
+      encoded_comment_outputs: ${{ needs.terragrunt_apply.outputs.encoded_comment_outputs }}
+      encoded_comment_results: ${{ needs.comment_results_status.outputs.encoded_comment_results }}
+      artifact_id: ${{ needs.terragrunt_apply.outputs.artifact_id }}
+      artifact_url: ${{ needs.terragrunt_apply.outputs.artifact_url }}
+    secrets:
+      github_secret_token: ${{ secrets.GITHUB_TOKEN }}
+
+  check_workflow_status:
+    name: Check Workflow Status
+    needs: comment_results_status
+    if: always()
+    uses: zcode-gh/gitops-workflow/.github/workflows/github-check-workflow-status.yml@main
+    with:
+      main_outcome: ${{ needs.comment_results_status.outputs.comment_results_status_outcome }}

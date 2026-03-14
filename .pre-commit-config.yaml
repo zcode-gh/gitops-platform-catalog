@@ -1,0 +1,55 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-json
+    -   id: check-added-large-files
+        args: ['--maxkb=60000']
+    -   id: mixed-line-ending
+        args: ['--fix=lf']
+    -   id: check-executables-have-shebangs
+    -   id: check-shebang-scripts-are-executable
+-   repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+    -   id: shellcheck
+-   repo: https://github.com/gruntwork-io/pre-commit
+    rev: v0.1.26
+    hooks:
+    -   id: terraform-fmt # terraform format files
+    -   id: terragrunt-hclfmt  # terragrunt hcl format files
+    -   id: terraform-validate # terraform validate
+    -   id: tflint # static analysis of Terraform templates
+-   repo: local
+    hooks:
+    -   id: trivy-scan
+        name: Trivy Security Scan
+        entry: bash ./hooks/trivy_scan.sh
+        language: system
+        types: [terraform]
+        description: Run Trivy to scan for vulnerabilities in changed files or directories
+        pass_filenames: true
+    -   id: terraform-docs
+        name: terraform-docs
+        entry: terraform-docs
+        language: system
+        types: [terraform]
+        pass_filenames: false
+        args: ["--config", "hooks/.terraform-docs.yml", "."]
+    -   id: terragrunt-hcl-validate
+        name: Terragrunt HCL validation
+        entry: bash ./hooks/terragrunt_hcl_validate.sh
+        language: system
+        types: [hcl]
+        description: Run Terragrunt validate on changed files
+        pass_filenames: true
+    -   id: terragrunt-validate-inputs
+        name: Terragrunt validate inputs
+        entry: bash ./hooks/terragrunt_validate_inputs.sh
+        language: system
+        types: [hcl]
+        description: Run Terragrunt validate on changed files
+        pass_filenames: true

@@ -1,0 +1,133 @@
+name: Terragrunt Plan
+# This workflow is triggered when a pull request is opened or updated.
+# It checks for modified files in the working directory and generates a Terragrunt plan if there are changes.
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  terragrunt_set_environment:
+    name: Set Environment
+    uses: zcode-gh/gitops-workflow/.github/workflows/terragrunt-set-environment.yml@main
+    with:
+      github_base_ref: ${{ github.base_ref }}
+
+  github_list_pr_files:
+    name: List Modified Files
+    uses: zcode-gh/gitops-workflow/.github/workflows/github-list-pr-files.yml@main
+    with:
+      github_repository: ${{ github.repository }}
+      github_event_pull_request_number: ${{ github.event.pull_request.number }}
+    secrets:
+      github_secret_token: ${{ secrets.GITHUB_TOKEN }}
+
+  pre_commit_check:
+    name: Run Pre-commit Hooks
+    needs: github_list_pr_files
+    if: needs.github_list_pr_files.outputs.pr_files_count > 0
+    uses: zcode-gh/gitops-workflow/.github/workflows/pre-commit.yml@main
+    with:
+      encoded_modified_files: ${{ needs.github_list_pr_files.outputs.encoded_modified_files }}
+
+  terragrunt_filter_working_dir:
+    name: Filter Working Directory
+    needs:
+      - terragrunt_set_environment
+      - github_list_pr_files
+    if: needs.github_list_pr_files.outputs.pr_files_count > 0
+    uses: zcode-gh/gitops-workflow/.github/workflows/terragrunt-filter-working-dir.yml@main
+    with:
+      working_directory_filter: ${{ needs.terragrunt_set_environment.outputs.working_dir }}
+      encoded_modified_files_to_filter: ${{ needs.github_list_pr_files.outputs.encoded_modified_files }}
+
+  terragrunt_plan:
+    name: Terragrunt Plan
+    needs: terragrunt_filter_working_dir
+    if: needs.terragrunt_filter_working_dir.outputs.working_dirs_count > 0
+    uses: zcode-gh/gitops-workflow/.github/workflows/terragrunt-plan.yml@main
+    with:
+      encoded_working_dirs: ${{ needs.terragrunt_filter_working_dir.outputs.encoded_working_dirs }}
+      github_repository: ${{ github.repository }}
+      github_run_id: ${{ github.run_id }}
+      github_event_pull_request_number: ${{ github.event.pull_request.number }}
+    secrets:
+      # Ensure that the secret INFRACOST_API_KEY exists in your repository or organization secrets.
+      infracost_api_key: ${{ secrets.INFRACOST_API_KEY }}
+
+  comment_results_status:
+    name: Comment Results Status
+    if: always()
+    needs:
+      - pre_commit_check
+      - terragrunt_plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Comment Results
+        id: comment_results
+        env:
+          PRE_COMMIT_CHECK_MAIN_OUTCOME: ${{ needs.pre_commit_check.outputs.main_outcome }}
+          PRE_COMMIT_CHECK_MAIN_RESULT: ${{ needs.pre_commit_check.result }}
+          PLAN_MAIN_OUTCOME: ${{ needs.terragrunt_plan.outputs.main_outcome }}
+          PLAN_RESULT: ${{ needs.terragrunt_plan.result }}
+        run: |
+          # Prepare the comment results to be posted
+          if [[ -z "${PRE_COMMIT_CHECK_MAIN_OUTCOME}" ]]; then
+            PRE_COMMIT_STATUS=$PRE_COMMIT_CHECK_MAIN_RESULT
+          else
+            PRE_COMMIT_STATUS=$PRE_COMMIT_CHECK_MAIN_OUTCOME
+          fi
+          if [[ -z "${PLAN_MAIN_OUTCOME}" ]]; then
+            PLAN_STATUS=$PLAN_RESULT
+          else
+            PLAN_STATUS=$PLAN_MAIN_OUTCOME
+          fi
+          PRE_COMMIT_STATUS_COMMENT="**Pre-commit check** [\`${PRE_COMMIT_STATUS}\`]"
+          PLAN_STATUS_COMMENT="**Terragrunt plan** [\`${PLAN_STATUS}\`]"
+          ENCODED_COMMENT_RESULTS=$(echo -e "${PRE_COMMIT_STATUS_COMMENT}\\n${PLAN_STATUS_COMMENT}" | jq -Rsa . | base64 -w 0)
+          echo "encoded_comment_results=${ENCODED_COMMENT_RESULTS}" >> $GITHUB_OUTPUT
+          if [[ "${PRE_COMMIT_STATUS}" == "failure" ]]; then
+            exit 1
+          fi
+          if [[ "${PLAN_STATUS}" == "failure" ]]; then
+            exit 1
+          fi
+        continue-on-error: true
+    outputs:
+      encoded_comment_results: ${{ steps.comment_results.outputs.encoded_comment_results }}
+      comment_results_status_outcome: ${{ steps.comment_results.outcome }}
+
+  github_post_comment:
+    name: Github Post Comment
+    needs:
+      - terragrunt_plan
+      - comment_results_status
+    if: always()
+    uses: zcode-gh/gitops-workflow/.github/workflows/github-post-comment.yml@main
+    with:
+      github_repository: ${{ github.repository }}
+      github_event_pull_request_number: ${{ github.event.pull_request.number }}
+      encoded_comment_title: ${{ needs.terragrunt_plan.outputs.encoded_comment_title }}
+      encoded_comment_outputs: ${{ needs.terragrunt_plan.outputs.encoded_comment_outputs }}
+      encoded_comment_results: ${{ needs.comment_results_status.outputs.encoded_comment_results }}
+      artifact_id: ${{ needs.terragrunt_plan.outputs.artifact_id }}
+      artifact_url: ${{ needs.terragrunt_plan.outputs.artifact_url }}
+    secrets:
+      github_secret_token: ${{ secrets.GITHUB_TOKEN }}
+
+  check_workflow_status:
+    name: Check Workflow Status
+    needs: comment_results_status
+    if: always()
+    uses: zcode-gh/gitops-workflow/.github/workflows/github-check-workflow-status.yml@main
+    with:
+      main_outcome: ${{ needs.comment_results_status.outputs.comment_results_status_outcome }}

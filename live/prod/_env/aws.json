@@ -1,0 +1,8 @@
+{
+  "region": "us-east-1",
+  "account_id": "123456789012",
+  "tags": {
+    "managed_by": "terraform",
+    "environment": "${environment_name}"
+  }
+}
