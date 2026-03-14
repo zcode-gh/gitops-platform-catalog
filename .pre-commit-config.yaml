@@ -33,12 +33,12 @@ repos:
         description: Run Trivy to scan for vulnerabilities in changed files or directories
         pass_filenames: true
     -   id: terraform-docs
-        name: terraform-docs
-        entry: terraform-docs
+        name: Generate Terraform documentation
+        entry: bash ./hooks/terraform_docs.sh
         language: system
         types: [terraform]
-        pass_filenames: false
-        args: ["--config", "hooks/.terraform-docs.yml", "."]
+        description: Generate Terraform documentation for changed files
+        pass_filenames: true
     -   id: terragrunt-hcl-validate
         name: Terragrunt HCL validation
         entry: bash ./hooks/terragrunt_hcl_validate.sh
