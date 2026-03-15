@@ -106,3 +106,39 @@ resource "aws_cloudwatch_log_group" "this" {
   retention_in_days = var.cloudwatch_log_group_retention_in_days
   tags              = var.cloudwatch_log_group_tags
 }
+
+resource "aws_network_acl" "public" {
+  vpc_id     = aws_vpc.this.id
+  subnet_ids = [for s in aws_subnet.public : s.id]
+  tags       = var.public_network_acl_tags
+}
+
+resource "aws_network_acl" "private" {
+  vpc_id     = aws_vpc.this.id
+  subnet_ids = [for s in aws_subnet.private : s.id]
+  tags       = var.private_network_acl_tags
+}
+
+resource "aws_network_acl_rule" "public" {
+  for_each       = { for idx, rule in var.public_nacl_rules : idx => rule }
+  network_acl_id = aws_network_acl.public.id
+  rule_number    = each.value.rule_number
+  egress         = each.value.egress
+  protocol       = each.value.protocol
+  rule_action    = each.value.rule_action
+  cidr_block     = each.value.cidr_block
+  from_port      = each.value.from_port
+  to_port        = each.value.to_port
+}
+
+resource "aws_network_acl_rule" "private" {
+  for_each       = { for idx, rule in var.private_nacl_rules : idx => rule }
+  network_acl_id = aws_network_acl.private.id
+  rule_number    = each.value.rule_number
+  egress         = each.value.egress
+  protocol       = each.value.protocol
+  rule_action    = each.value.rule_action
+  cidr_block     = each.value.cidr_block
+  from_port      = each.value.from_port
+  to_port        = each.value.to_port
+}

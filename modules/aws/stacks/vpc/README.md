@@ -28,6 +28,10 @@ No modules.
 | [aws_iam_role_policy_attachment.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_internet_gateway.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/internet_gateway) | resource |
 | [aws_nat_gateway.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/nat_gateway) | resource |
+| [aws_network_acl.private](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/network_acl) | resource |
+| [aws_network_acl.public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/network_acl) | resource |
+| [aws_network_acl_rule.private](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/network_acl_rule) | resource |
+| [aws_network_acl_rule.public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/network_acl_rule) | resource |
 | [aws_route_table.private](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table) | resource |
 | [aws_route_table.public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table) | resource |
 | [aws_route_table_association.private](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table_association) | resource |
@@ -55,9 +59,13 @@ No modules.
 | <a name="input_log_destination_type"></a> [log\_destination\_type](#input\_log\_destination\_type) | The type of destination for the flow log. Valid values are cloud-watch-logs or s3. | `string` | `"cloud-watch-logs"` | no |
 | <a name="input_nat_gateway_tags"></a> [nat\_gateway\_tags](#input\_nat\_gateway\_tags) | Tags for the NAT Gateway | `map(string)` | n/a | yes |
 | <a name="input_policy_document"></a> [policy\_document](#input\_policy\_document) | JSON of the policy document | `any` | <pre>{<br/>  "Statement": [<br/>    {<br/>      "Action": [<br/>        "logs:CreateLogGroup",<br/>        "logs:CreateLogStream",<br/>        "logs:PutLogEvents",<br/>        "logs:DescribeLogGroups",<br/>        "logs:DescribeLogStreams"<br/>      ],<br/>      "Effect": "Allow",<br/>      "Resource": "*"<br/>    }<br/>  ],<br/>  "Version": "2012-10-17"<br/>}</pre> | no |
+| <a name="input_private_nacl_rules"></a> [private\_nacl\_rules](#input\_private\_nacl\_rules) | List of rules for the private network ACL | <pre>list(object({<br/>    rule_number = number<br/>    egress      = bool<br/>    protocol    = string<br/>    rule_action = string<br/>    cidr_block  = string<br/>    from_port   = number<br/>    to_port     = number<br/>  }))</pre> | `[]` | no |
+| <a name="input_private_network_acl_tags"></a> [private\_network\_acl\_tags](#input\_private\_network\_acl\_tags) | Tags for the private network ACL | `map(string)` | `{}` | no |
 | <a name="input_private_route_cidr_block"></a> [private\_route\_cidr\_block](#input\_private\_route\_cidr\_block) | CIDR block for the private route | `string` | n/a | yes |
 | <a name="input_private_route_table_tags"></a> [private\_route\_table\_tags](#input\_private\_route\_table\_tags) | Tags for the private route table | `map(string)` | n/a | yes |
 | <a name="input_private_subnets"></a> [private\_subnets](#input\_private\_subnets) | List of private subnets with their settings | <pre>list(object({<br/>    cidr_block              = string<br/>    availability_zone       = string<br/>    map_public_ip_on_launch = bool<br/>    tags                    = map(string)<br/>  }))</pre> | n/a | yes |
+| <a name="input_public_nacl_rules"></a> [public\_nacl\_rules](#input\_public\_nacl\_rules) | List of rules for the public network ACL | <pre>list(object({<br/>    rule_number = number<br/>    egress      = bool<br/>    protocol    = string<br/>    rule_action = string<br/>    cidr_block  = string<br/>    from_port   = number<br/>    to_port     = number<br/>  }))</pre> | `[]` | no |
+| <a name="input_public_network_acl_tags"></a> [public\_network\_acl\_tags](#input\_public\_network\_acl\_tags) | Tags for the public network ACL | `map(string)` | `{}` | no |
 | <a name="input_public_route_cidr_block"></a> [public\_route\_cidr\_block](#input\_public\_route\_cidr\_block) | CIDR block for the public route | `string` | n/a | yes |
 | <a name="input_public_route_table_tags"></a> [public\_route\_table\_tags](#input\_public\_route\_table\_tags) | Tags for the public route table | `map(string)` | n/a | yes |
 | <a name="input_public_subnets"></a> [public\_subnets](#input\_public\_subnets) | List of public subnets with their settings | <pre>list(object({<br/>    cidr_block              = string<br/>    availability_zone       = string<br/>    map_public_ip_on_launch = bool<br/>    tags                    = map(string)<br/>  }))</pre> | n/a | yes |
