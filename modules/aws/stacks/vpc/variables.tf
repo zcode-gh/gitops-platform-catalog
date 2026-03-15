@@ -175,3 +175,43 @@ variable "enable_flow_logs" {
   type        = bool
   default     = false
 }
+
+variable "public_nacl_rules" {
+  description = "List of rules for the public network ACL"
+  type = list(object({
+    rule_number = number
+    egress      = bool
+    protocol    = string
+    rule_action = string
+    cidr_block  = string
+    from_port   = number
+    to_port     = number
+  }))
+  default = []
+}
+
+variable "private_nacl_rules" {
+  description = "List of rules for the private network ACL"
+  type = list(object({
+    rule_number = number
+    egress      = bool
+    protocol    = string
+    rule_action = string
+    cidr_block  = string
+    from_port   = number
+    to_port     = number
+  }))
+  default = []
+}
+
+variable "public_network_acl_tags" {
+  description = "Tags for the public network ACL"
+  type        = map(string)
+  default     = {}
+}
+
+variable "private_network_acl_tags" {
+  description = "Tags for the private network ACL"
+  type        = map(string)
+  default     = {}
+}
