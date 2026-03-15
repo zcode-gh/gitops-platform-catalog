@@ -47,3 +47,6 @@ bin/*
 # But track .zip and .tar.gz files
 !bin/*.zip
 !bin/*.tar.gz
+
+# Ignore all node_modules directories
+node_modules/
