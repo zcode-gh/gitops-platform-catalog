@@ -1,0 +1,11 @@
+name: Commit Validations
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  commit_lint:
+    name: Run Commit Lint
+    uses: zcode-gh/gitops-workflow/.github/workflows/commit-lint.yml@main

@@ -17,3 +17,9 @@ if [[ "$SKIP" == "enable_direnv" ]]; then
 else
     bash tools/enable_direnv.sh
 fi
+
+if [[ "$SKIP" == "install_npm_dependencies" ]]; then
+    echo "Skipping install-npm-dependencies.."
+else
+    bash tools/install_npm_dependencies.sh
+fi
