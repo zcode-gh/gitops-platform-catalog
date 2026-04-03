@@ -12,7 +12,7 @@ permissions:
 jobs:
   release:
     name: Release
-    uses: zcode-gh/gitops-workflow/.github/workflows/release.yml@fe53ab0bb71dbaff2a7e9da4b012371790936e4d #v1.0.0
+    uses: zcode-gh/gitops-workflow/.github/workflows/release.yml@a99c98a0840b9d271ef5a8156ea6b3b77a30a754 # v1.2.0
     with:
       owner: ${{ github.repository_owner }}
       repositories: ${{ github.event.repository.name }}
