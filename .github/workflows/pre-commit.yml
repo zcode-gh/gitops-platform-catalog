@@ -6,10 +6,11 @@ on:
 jobs:
   github_list_pr_files:
     name: List Modified Files
-    uses: zcode-gh/gitops-workflow/.github/workflows/github-list-pr-files.yml@a99c98a0840b9d271ef5a8156ea6b3b77a30a754 # v1.2.0
+    uses: zcode-gh/gitops-workflow/.github/workflows/github-list-pr-files.yml@387549597d6e6bb069359024dd88049aa01513e7 # v1.3.0
     with:
       github_repository: ${{ github.repository }}
       github_event_pull_request_number: ${{ github.event.pull_request.number }}
+      skip_token_generation_for_tools_repository: true
     secrets:
       github_secret_token: ${{ secrets.GITHUB_TOKEN }}
   pre_commit_check:
@@ -17,11 +18,12 @@ jobs:
     needs:
       - github_list_pr_files
     if: needs.github_list_pr_files.outputs.pr_files_count > 0
-    uses: zcode-gh/gitops-workflow/.github/workflows/pre-commit.yml@a99c98a0840b9d271ef5a8156ea6b3b77a30a754 # v1.2.0
+    uses: zcode-gh/gitops-workflow/.github/workflows/pre-commit.yml@387549597d6e6bb069359024dd88049aa01513e7 # v1.3.0
     with:
       encoded_modified_files: ${{ needs.github_list_pr_files.outputs.encoded_modified_files }}
       owner: ${{ github.repository_owner }}
       repositories: ${{ github.event.repository.name }}
+      skip_token_generation_for_tools_repository: true
     secrets:
       github_app_id: ${{ secrets.CREATE_TOKEN_APP_ID }}
       github_app_private_key: ${{ secrets.CREATE_TOKEN_APP_PRIVATE_KEY }}
