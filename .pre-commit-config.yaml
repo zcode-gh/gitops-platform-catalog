@@ -30,28 +30,28 @@ repos:
     hooks:
     -   id: trivy-scan
         name: Trivy Security Scan
-        entry: bash ./hooks/trivy_scan.sh
+        entry: bash ./tools/hooks/trivy_scan.sh
         language: system
         types: [terraform]
         description: Run Trivy to scan for vulnerabilities in changed files or directories
         pass_filenames: true
     -   id: terraform-docs
         name: Generate Terraform documentation
-        entry: bash ./hooks/terraform_docs.sh
+        entry: bash ./tools/hooks/terraform_docs.sh
         language: system
         types: [terraform]
         description: Generate Terraform documentation for changed files
         pass_filenames: true
     -   id: terragrunt-hcl-validate
         name: Terragrunt HCL validation
-        entry: bash ./hooks/terragrunt_hcl_validate.sh
+        entry: bash ./tools/hooks/terragrunt_hcl_validate.sh
         language: system
         types: [hcl]
         description: Run Terragrunt validate on changed files
         pass_filenames: true
     -   id: terragrunt-validate-inputs
         name: Terragrunt validate inputs
-        entry: bash ./hooks/terragrunt_validate_inputs.sh
+        entry: bash ./tools/hooks/terragrunt_validate_inputs.sh
         language: system
         types: [hcl]
         description: Run Terragrunt validate on changed files
